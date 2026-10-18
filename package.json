@@ -1,0 +1,23 @@
+{
+  "name": "ageofwarclone",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "workspaces": [
+    "packages/shared",
+    "packages/client",
+    "packages/server"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,client -c yellow,cyan \"npm run dev -w @aow/server\" \"npm run dev -w @aow/client\"",
+    "build": "npm run build -w @aow/client",
+    "start": "npm run start -w @aow/server",
+    "test": "vitest run",
+    "typecheck": "tsc -p packages/shared && tsc -p packages/client && tsc -p packages/server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.4"
+  }
+}

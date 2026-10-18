@@ -1,0 +1,17 @@
+{
+  "name": "@aow/client",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@aow/shared": "*"
+  },
+  "devDependencies": {
+    "vite": "^5.4.10"
+  }
+}

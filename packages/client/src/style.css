@@ -1,0 +1,304 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: #1b1d22;
+  color: #f2efe6;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  user-select: none;
+}
+
+#app {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+#stage {
+  position: relative;
+  width: min(100vw, calc(100vh * 2));
+  aspect-ratio: 2 / 1;
+}
+
+#game {
+  width: 100%;
+  height: 100%;
+  display: block;
+  border-radius: 6px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* HUD */
+#hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 6px;
+  padding: 8px;
+  font-size: clamp(10px, 1.1vw, 14px);
+}
+
+#hud .row {
+  display: flex;
+  gap: 6px;
+  align-items: stretch;
+  flex-wrap: wrap;
+}
+
+#hud .panel {
+  background: rgba(20, 20, 28, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  padding: 4px 8px;
+  pointer-events: auto;
+}
+
+#hud .stats {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+#hud .stat b {
+  color: #ffd75e;
+}
+
+#hud .xpbar {
+  width: 110px;
+  height: 8px;
+  background: #333;
+  border-radius: 4px;
+  overflow: hidden;
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+
+#hud .xpbar > div {
+  height: 100%;
+  background: #6fc3ff;
+}
+
+#hud button {
+  font: inherit;
+  color: inherit;
+  background: #3a3f4b;
+  border: 1px solid #596070;
+  border-radius: 5px;
+  padding: 4px 8px;
+  cursor: pointer;
+  pointer-events: auto;
+  min-width: 70px;
+  line-height: 1.2;
+  position: relative;
+  overflow: hidden;
+}
+
+#hud button:hover:not(:disabled) {
+  background: #4b5263;
+}
+
+#hud button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+#hud button .cost {
+  color: #ffd75e;
+  font-size: 0.9em;
+}
+
+#hud button .key {
+  position: absolute;
+  top: 1px;
+  right: 3px;
+  font-size: 0.75em;
+  opacity: 0.6;
+}
+
+#hud button .cd {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  background: #6fc3ff;
+}
+
+#hud .group-label {
+  font-size: 0.75em;
+  opacity: 0.7;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 2px;
+}
+
+#hud .queue {
+  display: flex;
+  gap: 3px;
+}
+
+#hud .queue .slot {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  background: #2a2d35;
+  border: 1px solid #444;
+  position: relative;
+  overflow: hidden;
+  font-size: 0.7em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#hud .queue .slot .fill {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  background: rgba(111, 195, 255, 0.5);
+}
+
+#hud .queue .slot span {
+  position: relative;
+}
+
+#hud .turret-slot {
+  min-width: 90px;
+}
+
+#hud .evolve-ready {
+  background: #2f6b3a;
+  border-color: #5fbf6f;
+  animation: pulse 1s infinite alternate;
+}
+
+@keyframes pulse {
+  from {
+    box-shadow: 0 0 0 rgba(95, 191, 111, 0.7);
+  }
+  to {
+    box-shadow: 0 0 10px rgba(95, 191, 111, 0.9);
+  }
+}
+
+/* Overlay screens */
+#overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#overlay:empty {
+  display: none;
+}
+
+.screen {
+  background: rgba(18, 19, 24, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  padding: 24px 32px;
+  min-width: 340px;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.screen h1 {
+  margin: 0 0 4px;
+  font-size: 2.2em;
+  letter-spacing: 0.03em;
+}
+
+.screen h2 {
+  margin: 0 0 12px;
+}
+
+.screen p {
+  opacity: 0.8;
+  margin: 6px 0 14px;
+}
+
+.screen .menu {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.screen button,
+.screen input,
+.screen select {
+  font: inherit;
+  font-size: 1.05em;
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: 1px solid #596070;
+  background: #3a3f4b;
+  color: inherit;
+}
+
+.screen button {
+  cursor: pointer;
+}
+
+.screen button:hover {
+  background: #4b5263;
+}
+
+.screen button.primary {
+  background: #2f5f9e;
+  border-color: #4f86d0;
+}
+
+.screen button.primary:hover {
+  background: #3a70b5;
+}
+
+.screen .inline {
+  display: flex;
+  gap: 8px;
+}
+
+.screen .inline > * {
+  flex: 1;
+}
+
+.screen input {
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  text-align: center;
+  min-width: 0;
+}
+
+.screen .code {
+  font-size: 2.6em;
+  letter-spacing: 0.3em;
+  font-weight: bold;
+  color: #ffd75e;
+  margin: 8px 0;
+}
+
+.screen .error {
+  color: #ff7b7b;
+  min-height: 1.2em;
+}
+
+.screen .help {
+  font-size: 0.85em;
+  opacity: 0.65;
+  margin-top: 16px;
+  line-height: 1.5;
+}
