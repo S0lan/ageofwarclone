@@ -119,8 +119,16 @@ describe('combat', () => {
     expect(hpAfter).toBeLessThan(hpBefore);
   });
 
-  it('overtime decays both bases and the weaker base falls first', () => {
+  it('has no overtime unless enabled', () => {
     const s = createGame();
+    s.tick = OVERTIME_TICKS;
+    run(s, TICK_RATE * 60);
+    expect(s.players[0].baseHp).toBe(s.players[0].baseMaxHp);
+    expect(s.winner).toBeNull();
+  });
+
+  it('overtime decays both bases and the weaker base falls first', () => {
+    const s = createGame(1, { overtime: true });
     s.tick = OVERTIME_TICKS;
     s.players[1].baseHp -= 50;
     run(s, TICK_RATE * 60 * 5);

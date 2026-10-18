@@ -11,7 +11,7 @@ export const MAX_QUEUE = 5;
 export const TURRET_SLOTS = 3;
 export const TURRET_SELL_REFUND = 0.5;
 
-/** After this many ticks both bases decay, so stalemates resolve in favour of whoever has more base HP. */
+/** When the overtime option is on, both bases start decaying after this many ticks. */
 export const OVERTIME_TICKS = TICK_RATE * 60 * 12;
 /** Fraction of max base HP lost per second during overtime. */
 export const OVERTIME_DECAY = 0.005;

@@ -1,7 +1,8 @@
-import type { GameState, PlayerId, ServerMessage } from '@aow/shared';
+import type { ClientMessage, GameOptions, GameState, PlayerId, ServerMessage } from '@aow/shared';
 import { AiController, type Difficulty } from './ai';
 import { Sound } from './audio';
 import { Hud } from './hud';
+import { LobbyScene } from './lobby';
 import { NetClient, OnlineSession } from './net';
 import { Renderer } from './render';
 import { LocalSession, type GameSession } from './session';
@@ -9,12 +10,16 @@ import { LocalSession, type GameSession } from './session';
 const canvas = document.getElementById('game') as HTMLCanvasElement;
 const overlay = document.getElementById('overlay')!;
 const renderer = new Renderer(canvas);
+const lobby = new LobbyScene(canvas.getContext('2d')!);
 const sound = new Sound();
 
 let session: GameSession | null = null;
 let net: NetClient | null = null;
 let roomCode = '';
 let difficulty: Difficulty = (localStorage.getItem('aow-difficulty') as Difficulty) || 'normal';
+let overtime = localStorage.getItem('aow-overtime') === '1';
+let settingsOpen = localStorage.getItem('aow-settings-open') === '1';
+let roomOptions: GameOptions | null = null;
 let gameOver = false;
 let paused = false;
 let opponentGone = false;
@@ -24,7 +29,58 @@ const hud = new Hud(document.getElementById('hud')!, (cmd) => {
   if (!gameOver && !paused) session?.send(cmd);
 });
 
-document.addEventListener('pointerdown', () => sound.unlock());
+// Browsers only allow audio after a user gesture; unlock() is safe to call repeatedly.
+for (const type of ['pointerdown', 'click', 'keydown'] as const) {
+  document.addEventListener(type, () => sound.unlock());
+}
+
+/** The volume and mute control that stays in the top-right corner on every screen. */
+function initAudioControls(): void {
+  const root = document.getElementById('audio')!;
+  root.innerHTML = `
+    <button id="audio-mute" title="Mute or unmute all sound"></button>
+    <label class="audio-row">Music
+      <input type="range" id="audio-music" min="0" max="100" step="1" aria-label="Music volume" />
+      <span class="volume-label" id="audio-music-label"></span>
+    </label>
+    <label class="audio-row">FX
+      <input type="range" id="audio-fx" min="0" max="100" step="1" aria-label="Game effects volume" />
+      <span class="volume-label" id="audio-fx-label"></span>
+    </label>`;
+  const mute = document.getElementById('audio-mute') as HTMLButtonElement;
+  const music = document.getElementById('audio-music') as HTMLInputElement;
+  const fx = document.getElementById('audio-fx') as HTMLInputElement;
+  const musicLabel = document.getElementById('audio-music-label')!;
+  const fxLabel = document.getElementById('audio-fx-label')!;
+
+  const refresh = () => {
+    mute.textContent = sound.muted ? 'Sound: off' : 'Sound: on';
+    mute.classList.toggle('off', sound.muted);
+    music.value = String(Math.round(sound.musicVolume * 100));
+    fx.value = String(Math.round(sound.fxVolume * 100));
+    musicLabel.textContent = `${Math.round(sound.musicVolume * 100)}%`;
+    fxLabel.textContent = `${Math.round(sound.fxVolume * 100)}%`;
+  };
+  // The game uses keyboard shortcuts (Space, 1-3...), so these controls must not keep keyboard focus.
+  mute.onclick = () => {
+    sound.toggleMute();
+    refresh();
+    mute.blur();
+  };
+  const bind = (slider: HTMLInputElement, set: (v: number) => void) => {
+    slider.oninput = () => {
+      // Moving a slider while muted is a clear sign the player wants to hear something.
+      if (sound.muted) sound.toggleMute();
+      set(Number(slider.value) / 100);
+      refresh();
+    };
+    slider.onchange = () => slider.blur();
+  };
+  bind(music, (v) => sound.setMusicVolume(v));
+  bind(fx, (v) => sound.setFxVolume(v));
+  refresh();
+}
+initAudioControls();
 
 const CONTROLS_HELP = `
   <div class="help">
@@ -57,6 +113,7 @@ function endSession(): void {
 
 function showMenu(error = ''): void {
   endSession();
+  sound.setMusic('lobby');
   if (net && roomCode) net.send({ t: 'leave' });
   roomCode = '';
   show(`
@@ -72,11 +129,21 @@ function showMenu(error = ''): void {
         </select>
       </div>
       <button id="create">Create online room</button>
+      <details class="settings" id="settings" ${settingsOpen ? 'open' : ''}>
+        <summary>Game settings <span class="summary-note" id="settings-note"></span></summary>
+        <div class="settings-body">
+          <label class="option" title="After 12 minutes both bases start losing HP, so the game always ends.">
+            <input type="checkbox" id="overtime" ${overtime ? 'checked' : ''} />
+            Overtime after 12 minutes
+          </label>
+          <div class="hint">Applies to games vs Computer and online rooms you create.</div>
+        </div>
+      </details>
+      <div class="divider"><span>or join with a code</span></div>
       <div class="inline">
         <input id="code" maxlength="4" placeholder="CODE" autocomplete="off" />
         <button id="join">Join room</button>
       </div>
-      <button id="mute">${sound.muted ? 'Sound: off' : 'Sound: on'}</button>
     </div>
     <div class="error">${error}</div>
     ${CONTROLS_HELP}`);
@@ -86,8 +153,23 @@ function showMenu(error = ''): void {
     difficulty = select.value as Difficulty;
     localStorage.setItem('aow-difficulty', difficulty);
   };
+  const settings = $('#settings') as HTMLDetailsElement;
+  const overtimeBox = $('#overtime') as HTMLInputElement;
+  const refreshNote = () => {
+    $('#settings-note').textContent = overtime ? '(overtime on)' : '';
+  };
+  settings.ontoggle = () => {
+    settingsOpen = settings.open;
+    localStorage.setItem('aow-settings-open', settingsOpen ? '1' : '0');
+  };
+  overtimeBox.onchange = () => {
+    overtime = overtimeBox.checked;
+    localStorage.setItem('aow-overtime', overtime ? '1' : '0');
+    refreshNote();
+  };
+  refreshNote();
   on('#pvc', startLocal);
-  on('#create', () => void connectAnd({ t: 'create' }));
+  on('#create', () => void connectAnd({ t: 'create', options: { overtime } }));
   const codeInput = $('#code') as HTMLInputElement;
   const join = () => {
     const code = codeInput.value.trim().toUpperCase();
@@ -98,13 +180,11 @@ function showMenu(error = ''): void {
   codeInput.onkeydown = (e) => {
     if (e.key === 'Enter') join();
   };
-  on('#mute', () => {
-    $('#mute').textContent = sound.toggleMute() ? 'Sound: off' : 'Sound: on';
-  });
 }
 
 function beginGame(s: GameSession, info: string): void {
   endSession();
+  sound.setMusic('game');
   session = s;
   renderer.setPerspective(s.myId);
   overlay.innerHTML = '';
@@ -113,10 +193,13 @@ function beginGame(s: GameSession, info: string): void {
 
 function startLocal(): void {
   const name = difficulty[0].toUpperCase() + difficulty.slice(1);
-  beginGame(new LocalSession(new AiController(1, difficulty)), `vs Computer (${name})`);
+  beginGame(
+    new LocalSession(new AiController(1, difficulty), { overtime }),
+    `vs Computer (${name})${overtime ? ' - overtime on' : ''}`,
+  );
 }
 
-async function connectAnd(msg: { t: 'create' } | { t: 'join'; code: string }): Promise<void> {
+async function connectAnd(msg: Extract<ClientMessage, { t: 'create' | 'join' }>): Promise<void> {
   show(`<h2>Connecting...</h2>`);
   try {
     if (!net) {
@@ -133,11 +216,16 @@ async function connectAnd(msg: { t: 'create' } | { t: 'join'; code: string }): P
   }
 }
 
+function overtimeLabel(options: GameOptions | null): string {
+  return options?.overtime ? 'Overtime: on (bases decay after 12 minutes)' : 'Overtime: off';
+}
+
 function showLobby(code: string): void {
   show(`
     <h2>Online room</h2>
     <p>Share this code with your opponent:</p>
     <div class="code">${code}</div>
+    <p>${overtimeLabel(roomOptions)}</p>
     <p>Waiting for an opponent to join...</p>
     <div class="menu"><button id="cancel">Cancel</button></div>`);
   on('#cancel', () => showMenu());
@@ -147,11 +235,15 @@ function handleServer(msg: ServerMessage): void {
   switch (msg.t) {
     case 'room':
       roomCode = msg.code;
+      roomOptions = msg.options;
       if (msg.you === 0) showLobby(msg.code);
-      else show(`<h2>Joined room ${msg.code}</h2><p>Starting...</p>`);
+      else show(`<h2>Joined room ${msg.code}</h2><p>${overtimeLabel(roomOptions)}</p><p>Starting...</p>`);
       break;
     case 'start':
-      beginGame(new OnlineSession(net!, msg.you), `Online room ${roomCode} - you are Player ${msg.you + 1}`);
+      beginGame(
+        new OnlineSession(net!, msg.you),
+        `Online room ${roomCode} - you are Player ${msg.you + 1}${roomOptions?.overtime ? ' - overtime on' : ''}`,
+      );
       break;
     case 'snap':
       if (session instanceof OnlineSession) session.receive(msg.state, msg.events);
@@ -219,15 +311,11 @@ function togglePause(): void {
     ${online ? '<p>The game keeps running while this menu is open.</p>' : ''}
     <div class="menu">
       <button class="primary" id="resume">Resume</button>
-      <button id="mute">${sound.muted ? 'Sound: off' : 'Sound: on'}</button>
       <button id="quit">${online ? 'Forfeit and leave' : 'Quit to menu'}</button>
     </div>
     ${CONTROLS_HELP}`);
   on('#resume', togglePause);
   on('#quit', () => showMenu());
-  on('#mute', () => {
-    $('#mute').textContent = sound.toggleMute() ? 'Sound: off' : 'Sound: on';
-  });
 }
 
 window.addEventListener('keydown', (e) => {
@@ -248,6 +336,8 @@ function loop(now: number): void {
       hud.update(state, session.myId);
       if (state.winner !== null && !gameOver) showGameOver(state.winner, state);
     }
+  } else {
+    lobby.draw(dt);
   }
   requestAnimationFrame(loop);
 }

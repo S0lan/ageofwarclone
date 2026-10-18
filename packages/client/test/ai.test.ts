@@ -3,7 +3,7 @@ import { AGES, TICK_RATE, applyCommand, createGame, spawnUnit, step } from '@aow
 import { AiController, type Difficulty } from '../src/ai';
 
 function simulate(a: Difficulty, b: Difficulty, maxMinutes = 20) {
-  const s = createGame(7);
+  const s = createGame(7, { overtime: true });
   const ai = [new AiController(0, a), new AiController(1, b)] as const;
   let evolved = 0;
   for (let t = 0; t < TICK_RATE * 60 * maxMinutes && s.winner === null; t++) {

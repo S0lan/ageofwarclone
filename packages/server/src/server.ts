@@ -17,6 +17,8 @@ const MIME: Record<string, string> = {
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
   '.ico': 'image/x-icon',
+  '.ogg': 'audio/ogg',
+  '.mp3': 'audio/mpeg',
 };
 
 export function parseClientMessage(data: unknown): ClientMessage | null {
@@ -25,6 +27,7 @@ export function parseClientMessage(data: unknown): ClientMessage | null {
     if (!msg || typeof msg !== 'object') return null;
     switch (msg.t) {
       case 'create':
+        return { t: 'create', options: { overtime: msg.options?.overtime === true } };
       case 'rematch':
       case 'leave':
         return { t: msg.t };
@@ -78,7 +81,7 @@ export function startServer(port: number): Promise<RunningServer> {
       if (!msg) return;
       switch (msg.t) {
         case 'create':
-          rooms.create(ws);
+          rooms.create(ws, msg.options);
           break;
         case 'join':
           rooms.join(ws, msg.code);

@@ -2,9 +2,9 @@ import {
   AGES,
   BASE_WIDTH,
   LANE_LENGTH,
-  OVERTIME_TICKS,
   TURRET_DEFS,
   UNIT_DEFS,
+  isOvertime,
   turretX,
   turretY,
   type GameEvent,
@@ -176,7 +176,7 @@ export class Renderer {
     this.drawMeteors(state);
     this.drawEffects(dt);
 
-    if (state.tick >= OVERTIME_TICKS && state.winner === null) {
+    if (isOvertime(state) && state.winner === null) {
       ctx.font = 'bold 22px Segoe UI, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillStyle = `rgba(200, 30, 30, ${0.6 + 0.4 * Math.sin(state.tick * 0.15)})`;

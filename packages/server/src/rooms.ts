@@ -1,4 +1,5 @@
 import {
+  DEFAULT_OPTIONS,
   ROOM_CODE_LENGTH,
   SNAPSHOT_RATE,
   TICK_RATE,
@@ -10,6 +11,7 @@ import {
   takeEvents,
   type Command,
   type GameEvent,
+  type GameOptions,
   type GameState,
   type PlayerId,
   type ServerMessage,
@@ -34,7 +36,10 @@ export class Room {
   private lastTime = 0;
   private acc = 0;
 
-  constructor(readonly code: string) {}
+  constructor(
+    readonly code: string,
+    readonly options: GameOptions = DEFAULT_OPTIONS,
+  ) {}
 
   get isFull(): boolean {
     return this.players[0] !== null && this.players[1] !== null;
@@ -48,7 +53,7 @@ export class Room {
     const slot = this.players[0] === null ? 0 : this.players[1] === null ? 1 : null;
     if (slot === null) return null;
     this.players[slot] = ws;
-    send(ws, { t: 'room', code: this.code, you: slot });
+    send(ws, { t: 'room', code: this.code, you: slot, options: this.options });
     if (this.isFull) this.start();
     return slot;
   }
@@ -86,7 +91,7 @@ export class Room {
   private start(): void {
     this.stopLoops();
     this.rematchVotes.clear();
-    this.state = createGame((Math.random() * 2 ** 32) >>> 0);
+    this.state = createGame((Math.random() * 2 ** 32) >>> 0, this.options);
     this.pendingEvents = [];
     this.players.forEach((ws, i) => send(ws, { t: 'start', you: i as PlayerId }));
     this.lastTime = performance.now();
@@ -141,13 +146,13 @@ export class RoomManager {
     return this.rooms.size;
   }
 
-  create(ws: WebSocket): void {
+  create(ws: WebSocket, options: GameOptions): void {
     this.leave(ws);
     let code: string;
     do {
       code = Array.from({ length: ROOM_CODE_LENGTH }, () => CODE_ALPHABET[Math.floor(Math.random() * CODE_ALPHABET.length)]).join('');
     } while (this.rooms.has(code));
-    const room = new Room(code);
+    const room = new Room(code, options);
     this.rooms.set(code, room);
     this.byClient.set(ws, room);
     room.add(ws);

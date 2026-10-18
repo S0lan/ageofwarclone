@@ -60,20 +60,24 @@ async function connect(): Promise<TestClient> {
 describe('server', () => {
   it('pairs two players through a room code and runs the game', async () => {
     const host = await connect();
-    host.send({ t: 'create' });
+    host.send({ t: 'create', options: { overtime: true } });
     const room = await host.waitFor('room');
     expect(room.you).toBe(0);
     expect(room.code).toMatch(/^[A-Z]{4}$/);
+    expect(room.options.overtime).toBe(true);
 
     const guest = await connect();
     guest.send({ t: 'join', code: room.code.toLowerCase() });
-    expect((await guest.waitFor('room')).you).toBe(1);
+    const joined = await guest.waitFor('room');
+    expect(joined.you).toBe(1);
+    expect(joined.options.overtime).toBe(true);
     expect((await host.waitFor('start')).you).toBe(0);
     expect((await guest.waitFor('start')).you).toBe(1);
 
     guest.send({ t: 'cmd', cmd: { type: 'spawnUnit', unit: 0 } });
     const snap = await host.waitFor('snap', (m) => m.state.units.some((u) => u.owner === 1));
     expect(snap.state.players[1].gold).toBeLessThan(175);
+    expect(snap.state.options.overtime).toBe(true);
   });
 
   it('rejects unknown rooms and awards a forfeit when a player leaves', async () => {
@@ -82,8 +86,9 @@ describe('server', () => {
     expect((await stranger.waitFor('error')).message).toContain('not found');
 
     const host = await connect();
-    host.send({ t: 'create' });
-    const { code } = await host.waitFor('room');
+    host.send({ t: 'create', options: { overtime: false } });
+    const { code, options } = await host.waitFor('room');
+    expect(options.overtime).toBe(false);
     const guest = await connect();
     guest.send({ t: 'join', code });
     await host.waitFor('start');

@@ -1,13 +1,13 @@
 import {
   AGES,
   MAX_QUEUE,
-  OVERTIME_TICKS,
   TICK_RATE,
   TURRET_DEFS,
   TURRET_SELL_REFUND,
   UNIT_DEFS,
   buildTurret,
   evolve,
+  isOvertime,
   secondsToTicks,
   sellTurret,
   spawnUnit,
@@ -139,7 +139,7 @@ export class Hud {
     this.xpFill.style.width = maxAge ? '100%' : `${Math.min(100, (p.xp / age.xpToEvolve) * 100)}%`;
     this.enemyLabel.textContent = `Enemy: ${AGES[enemy.age].name}`;
     const secs = Math.floor(state.tick / TICK_RATE);
-    const overtime = state.tick >= OVERTIME_TICKS;
+    const overtime = isOvertime(state);
     this.clockLabel.innerHTML = `${overtime ? '<b style="color:#ff7b7b">OVERTIME</b> ' : ''}${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
 
     age.units.forEach((u, i) => {

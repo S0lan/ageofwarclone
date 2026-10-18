@@ -207,7 +207,8 @@ body {
 }
 
 .screen {
-  background: rgba(18, 19, 24, 0.92);
+  background: rgba(18, 19, 24, 0.82);
+  backdrop-filter: blur(4px);
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 10px;
   padding: 24px 32px;
@@ -281,6 +282,149 @@ body {
   letter-spacing: 0.2em;
   text-align: center;
   min-width: 0;
+}
+
+.screen .divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0 6px;
+  font-size: 0.8em;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.6;
+}
+
+.screen .divider::before,
+.screen .divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Volume and mute, pinned to the top-right corner of the stage on every screen. */
+.audio-widget {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  padding: 6px 8px;
+  font-size: clamp(10px, 1.1vw, 14px);
+  background: rgba(20, 20, 28, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+}
+
+.audio-widget .audio-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: default;
+}
+
+.audio-widget button {
+  font: inherit;
+  color: inherit;
+  min-width: 7em;
+  padding: 3px 8px;
+  background: #3a3f4b;
+  border: 1px solid #596070;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.audio-widget button:hover {
+  background: #4b5263;
+}
+
+.audio-widget button.off {
+  opacity: 0.6;
+}
+
+.audio-widget input[type='range'] {
+  width: 84px;
+  margin: 0;
+  accent-color: #4f86d0;
+  cursor: pointer;
+}
+
+.audio-widget .volume-label {
+  width: 3.4em;
+  text-align: right;
+  opacity: 0.75;
+}
+
+.screen .settings {
+  border: 1px solid #596070;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  text-align: left;
+}
+
+.screen .settings summary {
+  cursor: pointer;
+  padding: 8px 14px;
+  font-size: 1.05em;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.screen .settings summary::-webkit-details-marker {
+  display: none;
+}
+
+.screen .settings summary::before {
+  content: '\25B6';
+  font-size: 0.7em;
+  transition: transform 0.15s;
+}
+
+.screen .settings[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.screen .settings .summary-note {
+  margin-left: auto;
+  font-size: 0.8em;
+  color: #ffd75e;
+}
+
+.screen .settings-body {
+  padding: 4px 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.screen .settings .hint {
+  font-size: 0.8em;
+  opacity: 0.6;
+}
+
+.screen .option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9em;
+  opacity: 0.85;
+  cursor: pointer;
+  text-align: left;
+}
+
+.screen .option input {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  margin: 0;
+  flex: none;
+  cursor: pointer;
 }
 
 .screen .code {

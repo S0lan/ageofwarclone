@@ -6,6 +6,7 @@ import {
   takeEvents,
   type Command,
   type GameEvent,
+  type GameOptions,
   type GameState,
   type PlayerId,
 } from '@aow/shared';
@@ -36,8 +37,11 @@ export class LocalSession implements GameSession {
   private acc = 0;
   private events: GameEvent[] = [];
 
-  constructor(private opponent: Controller | null) {
-    this.state = createGame((Math.random() * 2 ** 32) >>> 0);
+  constructor(
+    private opponent: Controller | null,
+    options: Partial<GameOptions> = {},
+  ) {
+    this.state = createGame((Math.random() * 2 ** 32) >>> 0, options);
     this.prev = structuredClone(this.state);
   }
 

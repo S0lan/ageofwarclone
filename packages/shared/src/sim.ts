@@ -95,9 +95,19 @@ export interface GameState {
   nextId: number;
   rng: number;
   winner: PlayerId | null;
+  options: GameOptions;
   /** Events accumulated since the last takeEvents() call. */
   events: GameEvent[];
 }
+
+export interface GameOptions {
+  /** After OVERTIME_TICKS both bases decay, so stalemates end in favour of whoever has more base HP. */
+  overtime: boolean;
+}
+
+export const DEFAULT_OPTIONS: GameOptions = { overtime: false };
+
+export const isOvertime = (state: GameState): boolean => state.options.overtime && state.tick >= OVERTIME_TICKS;
 
 export const BASE_TARGET = -1;
 const METEOR_START_Y = 500;
@@ -123,7 +133,7 @@ function createPlayer(): PlayerState {
   };
 }
 
-export function createGame(seed = 1): GameState {
+export function createGame(seed = 1, options: Partial<GameOptions> = {}): GameState {
   return {
     tick: 0,
     players: [createPlayer(), createPlayer()],
@@ -133,6 +143,7 @@ export function createGame(seed = 1): GameState {
     nextId: 1,
     rng: seed >>> 0,
     winner: null,
+    options: { ...DEFAULT_OPTIONS, ...options },
     events: [],
   };
 }
@@ -231,7 +242,7 @@ export function step(state: GameState): void {
     const p = state.players[owner];
     p.gold += AGES[p.age].income * DT;
     if (p.specialCooldown > 0) p.specialCooldown--;
-    if (state.tick >= OVERTIME_TICKS) p.baseHp -= p.baseMaxHp * OVERTIME_DECAY * DT;
+    if (isOvertime(state)) p.baseHp -= p.baseMaxHp * OVERTIME_DECAY * DT;
     processQueue(state, owner);
   }
 
