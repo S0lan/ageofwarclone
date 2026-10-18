@@ -41,7 +41,8 @@ Click a turret slot to sell it for half its cost.
 - Kills give gold and XP. Spend XP to evolve: Stone Age, then Medieval Age, then Modern Age. Each age has stronger units, turrets, a sturdier base, and more passive income.
 - Each age has a special attack with a 60-second cooldown.
 - Destroy the enemy base to win.
-- Optional overtime (off by default, toggled in the main menu): after 12 minutes both bases lose HP over time, so the player with more base HP wins any stalemate. For online games the room creator's setting applies.
+- Optional overtime (off by default, toggled in Game settings): after 12 minutes both bases lose HP over time, so the player with more base HP wins any stalemate. For online games the room creator's setting applies.
+- Special attack cooldown is also a Game setting: 60 seconds by default, adjustable from 30 to 180 in steps of 5. The room creator's setting applies online.
 
 ## Project layout
 

@@ -60,11 +60,12 @@ async function connect(): Promise<TestClient> {
 describe('server', () => {
   it('pairs two players through a room code and runs the game', async () => {
     const host = await connect();
-    host.send({ t: 'create', options: { overtime: true } });
+    host.send({ t: 'create', options: { overtime: true, specialCooldown: 15 } });
     const room = await host.waitFor('room');
     expect(room.you).toBe(0);
     expect(room.code).toMatch(/^[A-Z]{4}$/);
     expect(room.options.overtime).toBe(true);
+    expect(room.options.specialCooldown).toBe(30);
 
     const guest = await connect();
     guest.send({ t: 'join', code: room.code.toLowerCase() });
@@ -78,6 +79,7 @@ describe('server', () => {
     const snap = await host.waitFor('snap', (m) => m.state.units.some((u) => u.owner === 1));
     expect(snap.state.players[1].gold).toBeLessThan(175);
     expect(snap.state.options.overtime).toBe(true);
+    expect(snap.state.options.specialCooldown).toBe(30);
   });
 
   it('rejects unknown rooms and awards a forfeit when a player leaves', async () => {

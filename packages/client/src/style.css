@@ -418,6 +418,26 @@ body {
   text-align: left;
 }
 
+.screen .option.cooldown {
+  gap: 10px;
+}
+
+.screen .option input[type='range'] {
+  flex: 1;
+  width: auto;
+  height: auto;
+  padding: 0;
+  letter-spacing: 0;
+  text-transform: none;
+  accent-color: #4f86d0;
+  cursor: pointer;
+}
+
+.screen .option.cooldown span {
+  width: 3.2em;
+  text-align: right;
+}
+
 .screen .option input {
   width: 18px;
   height: 18px;

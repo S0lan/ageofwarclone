@@ -52,6 +52,7 @@ export class Hud {
   private specialCd = el('div', 'cd');
   private queueEl = el('div', 'queue');
   private renderedAge = -1;
+  private renderedCd = -1;
   private queueKey = '';
   private onKey = (e: KeyboardEvent) => this.handleKey(e);
 
@@ -100,6 +101,7 @@ export class Hud {
   show(info: string): void {
     this.infoLabel.textContent = info;
     this.renderedAge = -1;
+    this.renderedCd = -1;
     this.queueKey = '';
     for (const b of this.slotButtons) delete b.dataset.label;
     this.root.classList.remove('hidden');
@@ -131,7 +133,9 @@ export class Hud {
     const age = AGES[p.age];
     const maxAge = p.age >= AGES.length - 1;
 
-    if (this.renderedAge !== p.age) this.relabel(p.age);
+    if (this.renderedAge !== p.age || this.renderedCd !== state.options.specialCooldown) {
+      this.relabel(p.age, state.options.specialCooldown);
+    }
 
     this.ageLabel.innerHTML = `<b>${age.name}</b>`;
     this.goldLabel.innerHTML = `Gold: <b>${Math.floor(p.gold)}</b>`;
@@ -165,7 +169,7 @@ export class Hud {
     this.evolveButton.disabled = !canEvolve;
     this.evolveButton.classList.toggle('evolve-ready', canEvolve);
 
-    const cdTotal = secondsToTicks(age.special.cooldown);
+    const cdTotal = secondsToTicks(state.options.specialCooldown);
     this.specialButton.disabled = p.specialCooldown > 0;
     this.specialCd.style.width = `${(1 - p.specialCooldown / cdTotal) * 100}%`;
 
@@ -185,8 +189,9 @@ export class Hud {
     if (first && fill) fill.style.height = `${(1 - first.remaining / first.total) * 100}%`;
   }
 
-  private relabel(ageIndex: number): void {
+  private relabel(ageIndex: number, cooldown: number): void {
     this.renderedAge = ageIndex;
+    this.renderedCd = cooldown;
     const age = AGES[ageIndex];
     age.units.forEach((u, i) => {
       this.unitButtons[i].innerHTML =
@@ -202,7 +207,7 @@ export class Hud {
     this.evolveButton.innerHTML = next
       ? `Evolve<br><span class="cost">${age.xpToEvolve} XP</span><span class="key">E</span>`
       : `Final age<br><span class="cost">&nbsp;</span>`;
-    this.specialButton.innerHTML = `${age.special.name}<br><span class="cost">${age.special.cooldown}s cd</span><span class="key">S</span>`;
+    this.specialButton.innerHTML = `${age.special.name}<br><span class="cost">${cooldown}s cd</span><span class="key">S</span>`;
     this.specialButton.append(this.specialCd);
   }
 }

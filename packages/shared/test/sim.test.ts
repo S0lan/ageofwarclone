@@ -113,10 +113,19 @@ describe('combat', () => {
     run(s, TICK_RATE * 8);
     const hpBefore = s.units.reduce((sum, u) => sum + u.hp, 0);
     expect(applyCommand(s, 0, special())).toBe(true);
+    expect(s.players[0].specialCooldown).toBe(60 * TICK_RATE);
     expect(applyCommand(s, 0, special())).toBe(false);
     run(s, TICK_RATE * 4);
     const hpAfter = s.units.reduce((sum, u) => sum + u.hp, 0);
     expect(hpAfter).toBeLessThan(hpBefore);
+  });
+
+  it('clamps the special cooldown to 30-180 seconds', () => {
+    const s = createGame(1, { specialCooldown: 45 });
+    expect(applyCommand(s, 0, special())).toBe(true);
+    expect(s.players[0].specialCooldown).toBe(45 * TICK_RATE);
+    expect(createGame(1, { specialCooldown: 10 }).options.specialCooldown).toBe(30);
+    expect(createGame(1, { specialCooldown: 500 }).options.specialCooldown).toBe(180);
   });
 
   it('has no overtime unless enabled', () => {

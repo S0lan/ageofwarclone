@@ -1,4 +1,14 @@
-import type { ClientMessage, GameOptions, GameState, PlayerId, ServerMessage } from '@aow/shared';
+import {
+  SPECIAL_COOLDOWN_DEFAULT,
+  SPECIAL_COOLDOWN_MAX,
+  SPECIAL_COOLDOWN_MIN,
+  clampSpecialCooldown,
+  type ClientMessage,
+  type GameOptions,
+  type GameState,
+  type PlayerId,
+  type ServerMessage,
+} from '@aow/shared';
 import { AiController, type Difficulty } from './ai';
 import { Sound } from './audio';
 import { Hud } from './hud';
@@ -18,6 +28,8 @@ let net: NetClient | null = null;
 let roomCode = '';
 let difficulty: Difficulty = (localStorage.getItem('aow-difficulty') as Difficulty) || 'normal';
 let overtime = localStorage.getItem('aow-overtime') === '1';
+const storedCooldown = localStorage.getItem('aow-special-cd');
+let specialCooldown = storedCooldown === null ? SPECIAL_COOLDOWN_DEFAULT : clampSpecialCooldown(Number(storedCooldown));
 let settingsOpen = localStorage.getItem('aow-settings-open') === '1';
 let roomOptions: GameOptions | null = null;
 let gameOver = false;
@@ -136,6 +148,11 @@ function showMenu(error = ''): void {
             <input type="checkbox" id="overtime" ${overtime ? 'checked' : ''} />
             Overtime after 12 minutes
           </label>
+          <label class="option cooldown" title="How long each player waits between special attacks.">
+            Special cooldown
+            <input type="range" id="special-cd" min="${SPECIAL_COOLDOWN_MIN}" max="${SPECIAL_COOLDOWN_MAX}" step="5" value="${specialCooldown}" />
+            <span id="special-cd-label">${specialCooldown}s</span>
+          </label>
           <div class="hint">Applies to games vs Computer and online rooms you create.</div>
         </div>
       </details>
@@ -155,8 +172,14 @@ function showMenu(error = ''): void {
   };
   const settings = $('#settings') as HTMLDetailsElement;
   const overtimeBox = $('#overtime') as HTMLInputElement;
+  const specialSlider = $('#special-cd') as HTMLInputElement;
   const refreshNote = () => {
-    $('#settings-note').textContent = overtime ? '(overtime on)' : '';
+    const notes = [
+      overtime ? 'overtime on' : '',
+      specialCooldown !== SPECIAL_COOLDOWN_DEFAULT ? `special ${specialCooldown}s` : '',
+    ].filter(Boolean);
+    $('#settings-note').textContent = notes.length ? `(${notes.join(', ')})` : '';
+    $('#special-cd-label').textContent = `${specialCooldown}s`;
   };
   settings.ontoggle = () => {
     settingsOpen = settings.open;
@@ -167,9 +190,15 @@ function showMenu(error = ''): void {
     localStorage.setItem('aow-overtime', overtime ? '1' : '0');
     refreshNote();
   };
+  specialSlider.oninput = () => {
+    specialCooldown = clampSpecialCooldown(Number(specialSlider.value));
+    localStorage.setItem('aow-special-cd', String(specialCooldown));
+    refreshNote();
+  };
+  specialSlider.onchange = () => specialSlider.blur();
   refreshNote();
   on('#pvc', startLocal);
-  on('#create', () => void connectAnd({ t: 'create', options: { overtime } }));
+  on('#create', () => void connectAnd({ t: 'create', options: { overtime, specialCooldown } }));
   const codeInput = $('#code') as HTMLInputElement;
   const join = () => {
     const code = codeInput.value.trim().toUpperCase();
@@ -194,8 +223,8 @@ function beginGame(s: GameSession, info: string): void {
 function startLocal(): void {
   const name = difficulty[0].toUpperCase() + difficulty.slice(1);
   beginGame(
-    new LocalSession(new AiController(1, difficulty), { overtime }),
-    `vs Computer (${name})${overtime ? ' - overtime on' : ''}`,
+    new LocalSession(new AiController(1, difficulty), { overtime, specialCooldown }),
+    `vs Computer (${name})${overtime ? ' - overtime on' : ''}${specialCooldown !== SPECIAL_COOLDOWN_DEFAULT ? ` - special ${specialCooldown}s` : ''}`,
   );
 }
 
@@ -216,8 +245,10 @@ async function connectAnd(msg: Extract<ClientMessage, { t: 'create' | 'join' }>)
   }
 }
 
-function overtimeLabel(options: GameOptions | null): string {
-  return options?.overtime ? 'Overtime: on (bases decay after 12 minutes)' : 'Overtime: off';
+function optionsLabel(options: GameOptions | null): string {
+  const overtimeText = options?.overtime ? 'Overtime: on (bases decay after 12 minutes)' : 'Overtime: off';
+  const cd = options?.specialCooldown ?? SPECIAL_COOLDOWN_DEFAULT;
+  return `${overtimeText} · Special cooldown: ${cd}s`;
 }
 
 function showLobby(code: string): void {
@@ -225,7 +256,7 @@ function showLobby(code: string): void {
     <h2>Online room</h2>
     <p>Share this code with your opponent:</p>
     <div class="code">${code}</div>
-    <p>${overtimeLabel(roomOptions)}</p>
+    <p>${optionsLabel(roomOptions)}</p>
     <p>Waiting for an opponent to join...</p>
     <div class="menu"><button id="cancel">Cancel</button></div>`);
   on('#cancel', () => showMenu());
@@ -237,12 +268,14 @@ function handleServer(msg: ServerMessage): void {
       roomCode = msg.code;
       roomOptions = msg.options;
       if (msg.you === 0) showLobby(msg.code);
-      else show(`<h2>Joined room ${msg.code}</h2><p>${overtimeLabel(roomOptions)}</p><p>Starting...</p>`);
+      else show(`<h2>Joined room ${msg.code}</h2><p>${optionsLabel(roomOptions)}</p><p>Starting...</p>`);
       break;
     case 'start':
       beginGame(
         new OnlineSession(net!, msg.you),
-        `Online room ${roomCode} - you are Player ${msg.you + 1}${roomOptions?.overtime ? ' - overtime on' : ''}`,
+        `Online room ${roomCode} - you are Player ${msg.you + 1}${roomOptions?.overtime ? ' - overtime on' : ''}${
+          roomOptions && roomOptions.specialCooldown !== SPECIAL_COOLDOWN_DEFAULT ? ` - special ${roomOptions.specialCooldown}s` : ''
+        }`,
       );
       break;
     case 'snap':

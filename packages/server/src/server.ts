@@ -3,7 +3,7 @@ import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { extname, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseCommand, type ClientMessage } from '@aow/shared';
+import { clampSpecialCooldown, parseCommand, type ClientMessage } from '@aow/shared';
 import { WebSocketServer, type WebSocket } from 'ws';
 import { RoomManager } from './rooms';
 
@@ -27,7 +27,13 @@ export function parseClientMessage(data: unknown): ClientMessage | null {
     if (!msg || typeof msg !== 'object') return null;
     switch (msg.t) {
       case 'create':
-        return { t: 'create', options: { overtime: msg.options?.overtime === true } };
+        return {
+          t: 'create',
+          options: {
+            overtime: msg.options?.overtime === true,
+            specialCooldown: clampSpecialCooldown(msg.options?.specialCooldown),
+          },
+        };
       case 'rematch':
       case 'leave':
         return { t: msg.t };

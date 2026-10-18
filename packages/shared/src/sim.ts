@@ -6,11 +6,13 @@ import {
   MAX_QUEUE,
   OVERTIME_DECAY,
   OVERTIME_TICKS,
+  SPECIAL_COOLDOWN_DEFAULT,
   START_GOLD,
   TICK_RATE,
   TURRET_SELL_REFUND,
   TURRET_SLOTS,
   UNIT_SPACING,
+  clampSpecialCooldown,
   secondsToTicks,
 } from './constants';
 import { AGES, TURRET_DEFS, UNIT_DEFS } from './data';
@@ -103,9 +105,11 @@ export interface GameState {
 export interface GameOptions {
   /** After OVERTIME_TICKS both bases decay, so stalemates end in favour of whoever has more base HP. */
   overtime: boolean;
+  /** Seconds between special attacks, for both players. */
+  specialCooldown: number;
 }
 
-export const DEFAULT_OPTIONS: GameOptions = { overtime: false };
+export const DEFAULT_OPTIONS: GameOptions = { overtime: false, specialCooldown: SPECIAL_COOLDOWN_DEFAULT };
 
 export const isOvertime = (state: GameState): boolean => state.options.overtime && state.tick >= OVERTIME_TICKS;
 
@@ -143,7 +147,11 @@ export function createGame(seed = 1, options: Partial<GameOptions> = {}): GameSt
     nextId: 1,
     rng: seed >>> 0,
     winner: null,
-    options: { ...DEFAULT_OPTIONS, ...options },
+    options: {
+      ...DEFAULT_OPTIONS,
+      ...options,
+      specialCooldown: clampSpecialCooldown(options.specialCooldown ?? SPECIAL_COOLDOWN_DEFAULT),
+    },
     events: [],
   };
 }
@@ -200,7 +208,7 @@ export function applyCommand(state: GameState, owner: PlayerId, cmd: Command): b
     case 'special': {
       if (p.specialCooldown > 0) return false;
       const sp = age.special;
-      p.specialCooldown = secondsToTicks(sp.cooldown);
+      p.specialCooldown = secondsToTicks(state.options.specialCooldown);
       const from = baseFront(owner) + dir(owner) * 80;
       const to = baseFront(other(owner));
       const spreadTicks = sp.duration * TICK_RATE;
