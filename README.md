@@ -1,6 +1,6 @@
-# Age of War Clone
+# Warvanta
 
-A browser-based clone of Age of War written in TypeScript and HTML5 Canvas. You can play against the computer (easy, normal, or hard) or against another player online using room codes.
+A browser game written in TypeScript and HTML5 Canvas. You can play against the computer (easy, normal, or hard) or against another player online using room codes.
 
 ## Running
 

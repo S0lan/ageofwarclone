@@ -60,7 +60,7 @@ export function startServer(port: number): Promise<RunningServer> {
   const http = createServer((req, res) => {
     if (!existsSync(STATIC_DIR)) {
       res.writeHead(200, { 'content-type': 'text/plain' });
-      res.end('Age of War server is running. Build the client (npm run build) to serve it from here.');
+      res.end('Warvanta server is running. Build the client (npm run build) to serve it from here.');
       return;
     }
     const urlPath = decodeURIComponent((req.url ?? '/').split('?')[0]);

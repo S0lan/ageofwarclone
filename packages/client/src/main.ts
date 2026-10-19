@@ -129,7 +129,7 @@ function showMenu(error = ''): void {
   if (net && roomCode) net.send({ t: 'leave' });
   roomCode = '';
   show(`
-    <h1>Age of War</h1>
+    <h1>Warvanta</h1>
     <p>Defend your base. Destroy theirs.</p>
     <div class="menu">
       <div class="inline">
